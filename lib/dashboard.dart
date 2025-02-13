@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-
 import 'components/add_user.dart';
 import 'components/search_bar.dart';
-import 'components/text_field.dart';
+import 'screens/user_list.dart';
 import 'services/database_services.dart';
 
 class Dashboard extends StatefulWidget {
@@ -13,26 +12,27 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
-  final int _selectedIndex = 0;
-  String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
-  final PageController _pageController = PageController();
-  final DatabaseServices _databaseServices = DatabaseServices.instance;
+  final TextEditingController searchController = TextEditingController();
+  final DatabaseServices _databaseServices = DatabaseServices();
+  final PageController pageController = PageController();
 
+  String searchQuery = '';
+  int _selectedIndex = 0;
   List<Map<String, dynamic>> _users = [];
   List<Map<String, dynamic>> _favoriteUsers = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchUsers();
+    _loadUsers();
   }
 
-  Future<void> _fetchUsers() async {
-    final users = await _databaseServices.getUsers();
+  /// Fetches users from the database and updates the state
+  Future<void> _loadUsers() async {
+    List<Map<String, dynamic>> users = await _databaseServices.getUsers();
     setState(() {
       _users = users;
-      _favoriteUsers = _users.where((user) => user['favourite'] == 1).toList();
+      _favoriteUsers = users.where((user) => user['favourite'] == 1).toList();
     });
   }
 
@@ -42,24 +42,85 @@ class _DashboardState extends State<Dashboard> {
       appBar: AppBar(
         title: const Text('ShaadiSetu'),
         actions: [_moreOptionsButton()],
-        bottom: searchBar(
-          searchController: _searchController,
-          onChanged: (value) {
-            setState(() {
-              _searchQuery = value;
-            });
-          },
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(50),
+          child: searchBar(
+            searchController: searchController,
+            onChanged: (value) => setState(() => searchQuery = value),
+          ),
         ),
       ),
-      floatingActionButton: _floatingActionButton(),
-      body: const Center(
-        child: Text('Dashboard'),
+      body: PageView(
+        controller: pageController,
+        onPageChanged: (index) => setState(() => _selectedIndex = index),
+        children: [
+          UserList(
+            users: _users,
+            onRefresh: _loadUsers,
+          ),
+          UserList(
+            users: _favoriteUsers,
+            title: 'Favorite Users',
+            onRefresh: _loadUsers,
+          ),
+        ],
       ),
+      floatingActionButton: _floatingActionButton(),
+      bottomNavigationBar: _bottomNav(),
     );
   }
 
-  // **More Options Menu**
+  Widget _floatingActionButton() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FloatingActionButton(
+          onPressed: () {
+            _showBottomSheet();
+          },
+          child: const Icon(Icons.add),
+        ),
+        const SizedBox(height: 10),
+        FloatingActionButton(
+          onPressed: () async {
+            await _databaseServices.addTempUser();
+            _loadUsers(); // Reload users after adding a temp user
+          },
+          child: const Icon(Icons.refresh),
+        ),
+      ],
+    );
+  }
+
+  _showBottomSheet() {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+      ),
+      showDragHandle: true,
+      context: context,
+      builder: (context) {
+        return AddUser(
+          onUserAdded: _loadUsers,
+        );
+      },
+    );
+  }
+
+// **More Options Menu**
   Widget _moreOptionsButton() {
+    PopupMenuItem<String> popupMenuItem(
+        String value, IconData icon, String text) {
+      return PopupMenuItem<String>(
+        value: value,
+        child: ListTile(
+          leading: Icon(icon),
+          title: Text(text),
+        ),
+      );
+    }
+
     return PopupMenuButton<String>(
       onSelected: (value) {
         switch (value) {
@@ -67,7 +128,8 @@ class _DashboardState extends State<Dashboard> {
             print('Dark mode toggle');
             break;
           case 'delete_all':
-            _deleteAllUsers();
+            _databaseServices.deleteAll();
+            _loadUsers();
             break;
           case 'about_us':
             print('About Us');
@@ -75,62 +137,40 @@ class _DashboardState extends State<Dashboard> {
         }
       },
       itemBuilder: (BuildContext context) => [
-        _popupMenuItem('dark_mode', Icons.dark_mode, 'Dark Mode'),
-        _popupMenuItem('delete_all', Icons.delete, 'Delete All Users'),
-        _popupMenuItem('about_us', Icons.info, 'About Us'),
+        popupMenuItem('dark_mode', Icons.dark_mode, 'Dark Mode'),
+        popupMenuItem('delete_all', Icons.delete, 'Delete All Users'),
+        popupMenuItem('about_us', Icons.info, 'About Us'),
       ],
     );
   }
 
-  PopupMenuItem<String> _popupMenuItem(
-      String value, IconData icon, String text) {
-    return PopupMenuItem<String>(
-      value: value,
-      child: ListTile(
-        leading: Icon(icon),
-        title: Text(text),
-      ),
-    );
-  }
-
-  // **Floating Actions Buttons**
-  Widget _floatingActionButton() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        FloatingActionButton(
-          onPressed: _showAddUserModal,
-          tooltip: 'Add User',
-          child: const Icon(Icons.add),
-        ),
-        const SizedBox(height: 10),
-        FloatingActionButton(
-          onPressed: _addTempUser,
-          tooltip: 'Add Temp User',
-          child: const Icon(Icons.add),
-        ),
+  Widget _bottomNav() {
+    return BottomNavigationBar(
+      showUnselectedLabels: false,
+      showSelectedLabels: true,
+      currentIndex: _selectedIndex,
+      onTap: (index) {
+        pageController.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+        setState(() => _selectedIndex = index);
+      },
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: Colors.deepPurple,
+      unselectedItemColor: Colors.deepPurple[200],
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.star), label: 'Favorites'),
       ],
     );
   }
 
-  // **Show Add User Modal**
-  void _showAddUserModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => AddUser(onUserAdded: _fetchUsers),
-    );
-  }
-
-  // **Add Temporary User**
-  Future<void> _addTempUser() async {
-    await _databaseServices.addTempUser();
-    await _fetchUsers();
-  }
-
-  // **Delete All Users**
-  Future<void> _deleteAllUsers() async {
-    await _databaseServices.deleteAll();
-    await _fetchUsers();
+  @override
+  void dispose() {
+    searchController.dispose();
+    pageController.dispose();
+    super.dispose();
   }
 }

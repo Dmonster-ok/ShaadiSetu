@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'text_field.dart';
 
 PreferredSizeWidget searchBar(
-    {required TextEditingController searchController,required Function(String) onChanged}) {
+    {required TextEditingController searchController,required Function(String value) onChanged}) {
   return PreferredSize(
     preferredSize: const Size.fromHeight(60),
     child: Padding(

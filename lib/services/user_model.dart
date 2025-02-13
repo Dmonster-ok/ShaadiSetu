@@ -17,7 +17,6 @@ class UserModel {
   final int favourite;
   final String birthdate;
   final String createdAt;
-  late int age;
 
   UserModel({
     this.id,
@@ -36,24 +35,11 @@ class UserModel {
     this.favourite = 0,
     required this.birthdate,
     required this.createdAt,
-  }) {
-    age = _calculateAge(birthdate);
-  }
-  static int _calculateAge(String birthdate) {
-    DateTime birthDate = DateTime.parse(birthdate);
-    DateTime today = DateTime.now();
-
-    int age = today.year - birthDate.year;
-    if (today.month < birthDate.month ||
-        (today.month == birthDate.month && today.day < birthDate.day)) {
-      age--;
-    }
-    return age;
-  }
+  });
 
   Map<String, dynamic> toMap() {
     return {
-      TableDetails.id: id,
+      if (id != null) TableDetails.id: id,
       TableDetails.profileImage: profileImage,
       TableDetails.firstName: firstName,
       TableDetails.lastName: lastName,
@@ -69,7 +55,6 @@ class UserModel {
       TableDetails.favourite: favourite,
       TableDetails.birthdate: birthdate,
       TableDetails.createdAt: createdAt,
-      'age': age,
     };
   }
 
@@ -88,7 +73,7 @@ class UserModel {
       email: map[TableDetails.email],
       phone: map[TableDetails.phone],
       gender: map[TableDetails.gender],
-      favourite: map[TableDetails.favourite],
+      favourite: map[TableDetails.favourite] ?? 0,
       birthdate: map[TableDetails.birthdate],
       createdAt: map[TableDetails.createdAt],
     );

@@ -1,25 +1,27 @@
 import 'dart:math';
-
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'table_details.dart';
 import 'user_model.dart';
 
 class DatabaseServices {
+  static final DatabaseServices _instance = DatabaseServices._internal();
+  factory DatabaseServices() => _instance;
+  DatabaseServices._internal();
+
+  // Singleton instance of the database
   static Database? _db;
-  static final DatabaseServices instance = DatabaseServices._constructor();
 
-  DatabaseServices._constructor();
-
+  // Getter for the database instance
   Future<Database> get db async {
-    if (_db != null) return _db!;
-    _db = await _initDatabase();
+    if (_db == null || !_db!.isOpen) {
+      _db = await _initDatabase(); 
+    }
     return _db!;
   }
 
   Future<Database> _initDatabase() async {
     final String path = join(await getDatabasesPath(), 'shaadisetu.db');
-
     return await openDatabase(
       path,
       version: 1,
@@ -67,25 +69,41 @@ class DatabaseServices {
           .toIso8601String(),
       createdAt: DateTime.now().toIso8601String(),
     );
-    await addUser(tempUser);
+    await addUser(user: tempUser);
   }
 
-  Future<void> addUser(UserModel user) async {
-    final db = await instance.db;
-    await db.insert(TableDetails.tableName, user.toMap());
+  Future<void> addUser({required UserModel user}) async {
+    final database = await db; // Ensure database is initialized
+    await database.insert(TableDetails.tableName, user.toMap());
   }
 
   Future<List<Map<String, dynamic>>> getUsers() async {
-    final db = await instance.db;
-    final List<Map<String, dynamic>> maps =
-        await db.query(TableDetails.tableName);
+    final database = await db;
+    List<Map<String, dynamic>> users = await database.query(TableDetails.tableName);
 
-    return maps;
+    users = users.map((e) => Map<String, dynamic>.from(e)).toList();
+
+    for (var user in users) {
+      user['age'] = _calculateAge(user[TableDetails.birthdate]);
+    }
+    return users;
   }
 
-  Future<void> updateUser(UserModel user) async {
-    final db = await instance.db;
-    await db.update(
+  int _calculateAge(String birthdate) {
+    DateTime birthDate = DateTime.parse(birthdate);
+    DateTime today = DateTime.now();
+    int age = today.year - birthDate.year;
+
+    if (today.month < birthDate.month ||
+        (today.month == birthDate.month && today.day < birthDate.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  Future<void> updateUser({required UserModel user}) async {
+    final database = await db;
+    await database.update(
       TableDetails.tableName,
       user.toMap(),
       where: '${TableDetails.id} = ?',
@@ -93,18 +111,19 @@ class DatabaseServices {
     );
   }
 
-  Future<void> isFavourite(int userId, int status) async {
-    final db = await instance.db;
-    await db.rawUpdate('''
+  Future<int> isFavourite({required int userId, required int status}) async {
+    final database = await db;
+    int count = await database.rawUpdate('''
       UPDATE ${TableDetails.tableName}
       SET ${TableDetails.favourite} = ?
       WHERE ${TableDetails.id} = ?
     ''', [status, userId]);
+    return count;
   }
 
-  Future<void> deleteUser(int userId) async {
-    final db = await instance.db;
-    await db.delete(
+  Future<void> deleteUser({required int userId}) async {
+    final database = await db;
+    await database.delete(
       TableDetails.tableName,
       where: '${TableDetails.id} = ?',
       whereArgs: [userId],
@@ -112,17 +131,9 @@ class DatabaseServices {
   }
 
   Future<void> deleteAll() async {
-    final db = await instance.db;
-    await db.transaction((txn) async {
+    final database = await db;
+    await database.transaction((txn) async {
       await txn.delete(TableDetails.tableName);
     });
-  }
-
-  Future<void> closeDatabase() async {
-    final db = _db;
-    if (db != null) {
-      await db.close();
-      _db = null;
-    }
   }
 }
