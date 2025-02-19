@@ -15,7 +15,7 @@ class UserModel {
   final String phone;
   final int gender;
   final int favourite;
-  final String birthdate;
+  final String birthDate;
   final String createdAt;
 
   UserModel({
@@ -33,7 +33,7 @@ class UserModel {
     required this.phone,
     required this.gender,
     this.favourite = 0,
-    required this.birthdate,
+    required this.birthDate,
     required this.createdAt,
   });
 
@@ -53,7 +53,7 @@ class UserModel {
       TableDetails.phone: phone,
       TableDetails.gender: gender,
       TableDetails.favourite: favourite,
-      TableDetails.birthdate: birthdate,
+      TableDetails.birthdate: birthDate,
       TableDetails.createdAt: createdAt,
     };
   }
@@ -74,7 +74,7 @@ class UserModel {
       phone: map[TableDetails.phone],
       gender: map[TableDetails.gender],
       favourite: map[TableDetails.favourite] ?? 0,
-      birthdate: map[TableDetails.birthdate],
+      birthDate: map[TableDetails.birthdate],
       createdAt: map[TableDetails.createdAt],
     );
   }

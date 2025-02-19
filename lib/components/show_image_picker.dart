@@ -28,7 +28,7 @@ class _ShowImagePickerState extends State<ShowImagePicker> {
               ? DecorationImage(image: FileImage(File(_savedImagePath!)), fit: BoxFit.cover)
               : null,
           color: Colors.grey[300],
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(5),
         ),
       ),
       onTap: () async {

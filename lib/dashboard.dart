@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shaadisetu/services/search.dart';
 import 'components/add_user.dart';
 import 'components/search_bar.dart';
 import 'screens/user_list.dart';
 import 'services/database_services.dart';
+import 'services/table_details.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -29,7 +31,11 @@ class _DashboardState extends State<Dashboard> {
 
   /// Fetches users from the database and updates the state
   Future<void> _loadUsers() async {
-    List<Map<String, dynamic>> users = await _databaseServices.getUsers();
+    // List<Map<String, dynamic>> users = filter(
+    //     users: await _databaseServices.getUsers(), searchQuery: searchQuery);
+
+    List<Map<String, dynamic>> users = filter(
+        users: await tmpUsers, searchQuery: searchQuery);
     setState(() {
       _users = users;
       _favoriteUsers = users.where((user) => user['favourite'] == 1).toList();
@@ -46,7 +52,10 @@ class _DashboardState extends State<Dashboard> {
           preferredSize: const Size.fromHeight(50),
           child: searchBar(
             searchController: searchController,
-            onChanged: (value) => setState(() => searchQuery = value),
+            onChanged: (value) {
+              _loadUsers();
+              setState(() => searchQuery = value);
+            },
           ),
         ),
       ),
@@ -94,12 +103,17 @@ class _DashboardState extends State<Dashboard> {
 
   _showBottomSheet() {
     showModalBottomSheet(
+      enableDrag: true,
+      showDragHandle: true,
+      context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
       ),
-      showDragHandle: true,
-      context: context,
+      transitionAnimationController: AnimationController(
+        vsync: Navigator.of(context),
+        duration: const Duration(milliseconds: 300),
+      ),
       builder: (context) {
         return AddUser(
           onUserAdded: _loadUsers,

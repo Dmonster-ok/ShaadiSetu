@@ -13,6 +13,8 @@ class CustomTextField extends StatelessWidget {
   final int? maxLines;
   final Widget? suffixIcon;
   final void Function(String value)? onChanged;
+  final String? hintText;
+  final FloatingLabelBehavior? floatingLabelBehavior;
 
   const CustomTextField({
     super.key,
@@ -26,6 +28,8 @@ class CustomTextField extends StatelessWidget {
     this.maxLines,
     this.suffixIcon,
     this.onChanged,
+    this.hintText,
+    this.floatingLabelBehavior,
   });
 
   @override
@@ -47,6 +51,8 @@ class CustomTextField extends StatelessWidget {
           labelText: label,
           border: OutlineInputBorder(),
           suffixIcon: suffixIcon,
+          hintText: hintText,
+          floatingLabelBehavior: floatingLabelBehavior, 
         ),
       ),
     );

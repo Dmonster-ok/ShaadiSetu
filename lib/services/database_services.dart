@@ -15,7 +15,7 @@ class DatabaseServices {
   // Getter for the database instance
   Future<Database> get db async {
     if (_db == null || !_db!.isOpen) {
-      _db = await _initDatabase(); 
+      _db = await _initDatabase();
     }
     return _db!;
   }
@@ -64,7 +64,7 @@ class DatabaseServices {
       hobbies: 'None',
       gender: Random().nextInt(3),
       favourite: Random().nextBool() ? 1 : 0,
-      birthdate: DateTime.now()
+      birthDate: DateTime.now()
           .subtract(Duration(days: Random().nextInt(365 * 30)))
           .toIso8601String(),
       createdAt: DateTime.now().toIso8601String(),
@@ -77,16 +77,40 @@ class DatabaseServices {
     await database.insert(TableDetails.tableName, user.toMap());
   }
 
+  Future<UserModel> getUser({required int userId}) async {
+    final database = await db;
+    List<Map<String, dynamic>> users = await database.query(
+      TableDetails.tableName,
+      where: '${TableDetails.id} = ?',
+      whereArgs: [userId],
+    );
+    return UserModel.fromMap(users.first);
+  }
+
   Future<List<Map<String, dynamic>>> getUsers() async {
     final database = await db;
-    List<Map<String, dynamic>> users = await database.query(TableDetails.tableName);
+    List<Map<String, dynamic>> users = await database.query(
+      TableDetails.tableName,
+      columns: [
+        TableDetails.id,
+        TableDetails.profileImage,
+        TableDetails.firstName,
+        TableDetails.lastName,
+        TableDetails.phone,
+        TableDetails.city,
+        TableDetails.profession,
+        TableDetails.birthdate,
+        TableDetails.gender,
+        TableDetails.favourite,
+      ],
+    );
 
-    users = users.map((e) => Map<String, dynamic>.from(e)).toList();
-
-    for (var user in users) {
-      user['age'] = _calculateAge(user[TableDetails.birthdate]);
-    }
-    return users;
+    return users.map((user) {
+      return {
+        ...user,
+        'age': _calculateAge(user[TableDetails.birthdate]),
+      };
+    }).toList();
   }
 
   int _calculateAge(String birthdate) {

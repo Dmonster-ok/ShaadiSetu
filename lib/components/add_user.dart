@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../services/cities.dart';
+import '../services/database_services.dart';
 import '../services/user_model.dart';
+import 'birth_date_picker.dart';
 import 'gender_selector.dart';
 import 'show_image_picker.dart';
 import 'text_field.dart';
@@ -19,7 +21,7 @@ class AddUser extends StatefulWidget {
 }
 
 class _AddUserState extends State<AddUser> {
-  String _pfpPath = 'assets/images/default_pfp.png';
+  String _pfpPath = '';
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -27,6 +29,17 @@ class _AddUserState extends State<AddUser> {
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _hobbiesController = TextEditingController();
+  final TextEditingController _castController = TextEditingController();
+  final TextEditingController _religionController = TextEditingController();
+  final TextEditingController _professionController = TextEditingController();
+  final TextEditingController _birthDateController = TextEditingController();
+
+  final Color _errorColor = Color(0xFFB3261E);
+  bool _cityError = false;
+  String? _selectedCity;
+  Set<String> _selectedHobbies = {};
+  DateTime _selectedDate =
+      DateTime.now().subtract(const Duration(days: 365 * 25));
   int _selectedGender = 0;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -34,22 +47,60 @@ class _AddUserState extends State<AddUser> {
   static const double _padding = 10.0;
 
   void _resetForm() {
-    _firstNameController.clear();
-    _lastNameController.clear();
-    _emailController.clear();
-    _phoneController.clear();
-    _addressController.clear();
-    _cityController.clear();
-    _formKey.currentState?.reset();
+    setState(() {
+      _formKey.currentState?.reset();
+
+      _firstNameController.clear();
+      _lastNameController.clear();
+      _emailController.clear();
+      _phoneController.clear();
+      _addressController.clear();
+      _cityController.clear();
+      _hobbiesController.clear();
+      _castController.clear();
+      _religionController.clear();
+      _professionController.clear();
+      _birthDateController.clear();
+
+      _pfpPath = '';
+      _selectedDate = DateTime.now().subtract(const Duration(days: 365 * 25));
+      _selectedGender = 0;
+      _selectedHobbies.clear();
+      _selectedCity = null;
+      _cityError = false;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.user != null) {
+      _firstNameController.text = widget.user!.firstName;
+      _lastNameController.text = widget.user!.lastName;
+      _emailController.text = widget.user!.email;
+      _phoneController.text = widget.user!.phone;
+      _addressController.text = widget.user!.address;
+      _cityController.text = widget.user!.city;
+      _hobbiesController.text = widget.user!.hobbies;
+      _castController.text = widget.user!.cast;
+      _religionController.text = widget.user!.religion;
+      _professionController.text = widget.user!.profession;
+      _selectedDate = widget.user!.birthDate as DateTime;
+      _selectedGender = widget.user!.gender;
+      _pfpPath = widget.user!.profileImage!;
+      _selectedHobbies = widget.user!.hobbies.split(',').toSet();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.95,
-      minChildSize: 0.95,
-      maxChildSize: 0.95,
+      initialChildSize: 0.85,
+      minChildSize: 0.85,
+      maxChildSize: 0.85,
       shouldCloseOnMinExtent: true,
+      snap: true,
+      snapAnimationDuration: const Duration(milliseconds: 150),
       expand: false,
       builder: (context, scrollController) {
         return Padding(
@@ -58,17 +109,20 @@ class _AddUserState extends State<AddUser> {
             children: [
               _title(),
               Divider(height: _padding),
-              Flexible(
-                child: ListView(
-                  controller: scrollController,
-                  children: [
-                    _personalInfo(),
-                    _contactInfo(),
-                    SizedBox(height: _padding),
-                    _genderSelector(),
-                    SizedBox(height: _padding),
-                    _hobbies(),
-                  ],
+              Expanded(
+                child: Form(
+                  key: _formKey,
+                  child: ListView(
+                    controller: scrollController,
+                    children: [
+                      _personalInfo(),
+                      SizedBox(height: _padding),
+                      _birthDateAndGender(),
+                      _contactInfo(),
+                      _otherInfo(),
+                      const SizedBox(height: 50),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -82,22 +136,44 @@ class _AddUserState extends State<AddUser> {
     return Padding(
       padding: const EdgeInsets.all(_padding),
       child: Row(
-        mainAxisSize: MainAxisSize.max,
         children: [
-          Text(widget.title,
-              style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(
+            '${widget.title} User',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
           const Spacer(),
           ElevatedButton(
-            onPressed: () {
-              _resetForm();
-            },
+            onPressed: _resetForm,
             child: const Text('Reset'),
           ),
+          const SizedBox(width: 8),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              setState(() {
+                _cityError = _selectedCity == null || _selectedCity!.isEmpty;
+              });
+
               if (_formKey.currentState?.validate() ?? false) {
+                // Trigger validation
+                UserModel newUser = UserModel(
+                  firstName: _firstNameController.text.trim(),
+                  lastName: _lastNameController.text.trim(),
+                  email: _emailController.text.trim(),
+                  phone: _phoneController.text.trim(),
+                  address: _addressController.text.trim(),
+                  city: _cityController.text.trim(),
+                  hobbies: _selectedHobbies.join(','),
+                  cast: _castController.text.trim(),
+                  religion: _religionController.text.trim(),
+                  profession: _professionController.text.trim(),
+                  gender: _selectedGender,
+                  profileImage: _pfpPath,
+                  birthDate: _selectedDate.toIso8601String(),
+                  createdAt: DateTime.now().toIso8601String(),
+                );
+                await DatabaseServices().addUser(user: newUser);
                 widget.onUserAdded();
+                _resetForm();
               }
             },
             child: const Text('Save'),
@@ -107,15 +183,18 @@ class _AddUserState extends State<AddUser> {
     );
   }
 
-
   // **Personal Information Section**
   Widget _personalInfo() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        ShowImagePicker(onImagePicked: (String path) {
-          _pfpPath = path;
-        },),
+        ShowImagePicker(
+          onImagePicked: (String path) {
+            setState(() {
+              _pfpPath = path;
+            });
+          },
+        ),
         const SizedBox(width: _padding),
         Expanded(
           child: Column(
@@ -144,36 +223,27 @@ class _AddUserState extends State<AddUser> {
     );
   }
 
-  // **Hobbies Section**
-  Widget _hobbies() {
-    hobbyChip(String label) {
-      return Chip(
-        label: Text(label),
-        
-      );
-    }
+  Widget _birthDateAndGender() {
     return Column(
-      mainAxisAlignment :MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        const Text('Hobbies', style: TextStyle(fontSize: 18)),
-        const SizedBox(height: 5),
-        Wrap(
-          spacing: 5,
-          children: [
-            hobbyChip('Reading'),
-            hobbyChip('Writing'),
-            hobbyChip('Coding'),
-            hobbyChip('Singing'),
-            hobbyChip('Dancing'),
-            hobbyChip('Cooking'),
-            hobbyChip('Gaming'),
-            hobbyChip('Travelling'),
-          ],
+        BirthDatePicker(
+          onDateSelected: (date) {
+            setState(() => _selectedDate = date);
+          },
+          dateController: _birthDateController,
+          initialDate: _selectedDate,
+        ),
+        GenderSelector(
+          groupValue: _selectedGender,
+          onChanged: (value) {
+            if (value != null) setState(() => _selectedGender = value);
+          },
         ),
       ],
     );
   }
+
   // **Contact Information Section**
   Widget _contactInfo() {
     return Column(
@@ -200,35 +270,166 @@ class _AddUserState extends State<AddUser> {
           validator: (value) =>
               (value!.length != 10) ? 'Phone number should be 10 digits' : null,
         ),
+        _cityDropdown(),
         CustomTextField(
           label: 'Address',
           controller: _addressController,
+          keyboardType: TextInputType.multiline,
           minLines: 4,
-          maxLines: 5,
+          maxLines: 4,
+          maxLength: 120,
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(120),
+          ],
+          hintText: 'Address',
+          floatingLabelBehavior: FloatingLabelBehavior.always,
           validator: (value) => value!.isEmpty ? 'Address is required' : null,
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5),
-          child: DropdownMenu(
-            width: double.maxFinite,
-            label: Text('City'),
-            controller: _cityController,
-            requestFocusOnTap: true,
-            menuHeight: 250,
-            dropdownMenuEntries: gujaratCities.map((city) => DropdownMenuEntry(value: city, label: city)).toList()),
-        )
       ],
     );
   }
 
-  // **Gender Selector**
-  Widget _genderSelector() {
-    return GenderSelector(
-      groupValue: _selectedGender,
-      onChanged: (value) {
-        if (value != null) setState(() => _selectedGender = value);
-      },
+  // **City Dropdown**
+  Widget _cityDropdown() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DropdownMenu(
+            width: double.maxFinite,
+            label: Text(
+              'City',
+              style: TextStyle(
+                color: _cityError
+                    ? _errorColor
+                    : Colors.grey[800], // Label color change
+              ),
+            ),
+            controller: _cityController,
+            requestFocusOnTap: true,
+            menuHeight: 350,
+            inputDecorationTheme: InputDecorationTheme(
+              border: OutlineInputBorder(
+                borderSide: BorderSide(
+                  color: _cityError
+                      ? _errorColor
+                      : Colors.grey, // Border color change
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(
+                  color:
+                      _cityError ? _errorColor : Colors.grey, // Normal border
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(
+                  color: _cityError ? _errorColor : Colors.deepPurple,
+                  width: 2, // Focus border
+                ),
+              ),
+            ),
+            dropdownMenuEntries: gujaratCities
+                .map((city) => DropdownMenuEntry(value: city, label: city))
+                .toList(),
+            onSelected: (value) {
+              setState(() {
+                _selectedCity = value;
+                _cityError = false;
+              });
+            },
+          ),
+          if (_cityError)
+            Padding(
+              padding: EdgeInsets.only(top: 5, left: 10),
+              child: Text(
+                'Please select a city',
+                style: TextStyle(color: _errorColor, fontSize: 12),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
+// **Other Information Section**
+  Widget _otherInfo() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CustomTextField(
+          label: 'Profession',
+          controller: _professionController,
+          maxLength: 100,
+          maxLines: 1,
+          validator: (value) =>
+              value!.isEmpty ? 'Profession is required' : null,
+        ),
+        CustomTextField(
+          label: 'Cast',
+          controller: _castController,
+          maxLength: 50,
+          maxLines: 1,
+          validator: (value) => null,
+        ),
+        CustomTextField(
+          label: 'Religion',
+          controller: _religionController,
+          maxLength: 50,
+          maxLines: 1,
+          validator: (value) => null,
+        ),
+        _hobbies(),
+      ],
+    );
+  }
+
+  // **Hobbies Section**
+  Widget _hobbies() {
+    List<String> hobbiesList = [
+      'Reading',
+      'Writing',
+      'Coding',
+      'Singing',
+      'Dancing',
+      'Cooking',
+      'Gaming',
+      'Travelling'
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: _padding),
+        const Text('Hobbies', style: TextStyle(fontSize: 16)),
+        const SizedBox(height: _padding / 2),
+        Wrap(
+          spacing: 5,
+          children: hobbiesList.map((hobby) {
+            bool isSelected = _selectedHobbies.contains(hobby);
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (isSelected) {
+                    _selectedHobbies.remove(hobby);
+                  } else {
+                    _selectedHobbies.add(hobby);
+                  }
+                });
+              },
+              child: Chip(
+                label: Text(hobby),
+                backgroundColor:
+                    isSelected ? Colors.deepPurple[400] : Colors.transparent,
+                labelStyle: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
 }

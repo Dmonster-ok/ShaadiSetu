@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shaadisetu/services/table_details.dart';
+import '../services/table_details.dart';
 
 class UserList extends StatefulWidget {
   final String title;
@@ -27,19 +27,33 @@ class _UserListState extends State<UserList> {
     return RefreshIndicator(
       onRefresh: () async {
         if (widget.onRefresh != null) {
-          Future.delayed(const Duration(milliseconds: 50));
+          await Future.delayed(const Duration(milliseconds: 50));
           widget.onRefresh!();
         }
       },
-      child: ListView.builder(
-        itemCount: widget.users.length,
-        itemBuilder: (context, index) {
-          Map<String, dynamic> user = widget.users[index];
-          return ListTile(
-            title: Text('${user[TableDetails.firstName]} ${user[TableDetails.lastName]}'),
-            subtitle: Text(user[TableDetails.email]),
-          );
-        },
+      child: SingleChildScrollView(
+        child: ExpansionPanelList.radio(
+          children: widget.users.map<ExpansionPanelRadio>((user) {
+            return ExpansionPanelRadio(
+              canTapOnHeader: true,
+              value: user[TableDetails.id],
+              headerBuilder: (context, isExpanded) {
+                return ListTile(
+                  leading: GestureDetector(
+                    onTap: () {
+                    },
+                    child: CircleAvatar(
+                      child: Text(user[TableDetails.firstName][0]),
+                    ),
+                  ),
+                  title: Text("${user[TableDetails.firstName]} ${user[TableDetails.lastName]}"),
+                  subtitle: Text(user[TableDetails.email]),
+                );
+              },
+              body: SizedBox(height: 100,)
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -48,8 +62,10 @@ class _UserListState extends State<UserList> {
     return Center(
       child: Text(
         'No ${widget.title} found',
-        style: TextStyle(fontSize: 16, color: Colors.black54),
+        style: TextStyle(fontSize: 18, color: Colors.black54),
       ),
     );
   }
 }
+
+
