@@ -29,13 +29,11 @@ class _DashboardState extends State<Dashboard> {
     _loadUsers();
   }
 
-  /// Fetches users from the database and updates the state
   Future<void> _loadUsers() async {
-    List<Map<String, dynamic>> users = filter(
-        users: await _databaseServices.getUsers(), searchQuery: searchQuery);
+    final allUsers = await _databaseServices.getUsers();
     setState(() {
-      _users = users;
-      _favoriteUsers = users.where((user) => user['favourite'] == 1).toList();
+      _users = filter(users: allUsers, searchQuery: searchQuery);
+      _favoriteUsers = _users.where((user) => user['favourite'] == 1).toList();
     });
   }
 
@@ -50,8 +48,8 @@ class _DashboardState extends State<Dashboard> {
           child: searchBar(
             searchController: searchController,
             onChanged: (value) {
-              _loadUsers();
               setState(() => searchQuery = value);
+              _loadUsers();
             },
           ),
         ),
@@ -81,8 +79,8 @@ class _DashboardState extends State<Dashboard> {
       mainAxisSize: MainAxisSize.min,
       children: [
         FloatingActionButton(
-          onPressed: () {
-            _showBottomSheet();
+          onPressed: () async{
+            await _showBottomSheet();
           },
           child: const Icon(Icons.add),
         ),
@@ -109,8 +107,8 @@ class _DashboardState extends State<Dashboard> {
       ),
       builder: (context) {
         return UserForm(
-          onUserAdded: () {
-            _loadUsers();
+          onUserAdded: () async {
+            await _loadUsers();
             Navigator.pop(context);
           },
         );
@@ -165,7 +163,6 @@ class _DashboardState extends State<Dashboard> {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
-        setState(() => _selectedIndex = index);
       },
       type: BottomNavigationBarType.fixed,
       selectedItemColor: Colors.deepPurple,

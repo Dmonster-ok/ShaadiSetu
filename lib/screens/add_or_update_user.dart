@@ -62,7 +62,8 @@ class _UserFormState extends State<UserForm> {
       _professionController.clear();
       _pfpPath = '';
       _selectedDate = DateTime.now().subtract(const Duration(days: 365 * 25));
-      _birthDateController.text = DateFormat('dd-MM-yyyy').format(_selectedDate);
+      _birthDateController.text =
+          DateFormat('dd-MM-yyyy').format(_selectedDate);
       _selectedGender = 0;
       _selectedHobbies.clear();
       _selectedCity = null;
@@ -86,7 +87,8 @@ class _UserFormState extends State<UserForm> {
       _religionController.text = widget.user!.religion.trim();
       _professionController.text = widget.user!.profession.trim();
       _selectedDate = DateTime.parse(widget.user!.birthDate);
-      _birthDateController.text = DateFormat('dd-MM-yyyy').format(_selectedDate);
+      _birthDateController.text =
+          DateFormat('dd-MM-yyyy').format(_selectedDate);
       _selectedGender = widget.user!.gender;
       _pfpPath = widget.user!.profileImage!;
       _selectedHobbies = widget.user!.hobbies.split(',').toSet();
@@ -136,6 +138,7 @@ class _UserFormState extends State<UserForm> {
     );
   }
 
+  // **Title Section**
   Widget _title() {
     return Padding(
       padding: const EdgeInsets.all(_padding),
@@ -203,17 +206,21 @@ class _UserFormState extends State<UserForm> {
   // **Personal Information Section**
   Widget _personalInfo() {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        ShowImagePicker(
-          initialImagePath: _pfpPath,
-          onImagePicked: (String? path) {
-            setState(() {
-              if (path != null) {
-                _pfpPath = path;
-              }
-            });
-          },
+        Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: ShowImagePicker(
+            initialImagePath: _pfpPath,
+            onImagePicked: (String? path) {
+              setState(() {
+                if (path != null) {
+                  _pfpPath = path;
+                }
+              });
+            },
+          ),
         ),
         const SizedBox(width: _padding),
         Expanded(
@@ -224,6 +231,10 @@ class _UserFormState extends State<UserForm> {
                 maxLength: 25,
                 maxLines: 1,
                 controller: _firstNameController,
+                textCapitalization: TextCapitalization.words,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z][^\s]*')),
+                ],
                 validator: (value) =>
                     value!.isEmpty ? 'First Name is required' : null,
               ),
@@ -233,6 +244,10 @@ class _UserFormState extends State<UserForm> {
                 maxLength: 25,
                 maxLines: 1,
                 controller: _lastNameController,
+                textCapitalization: TextCapitalization.words,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z][^\s]*')),
+                ],
                 validator: (value) =>
                     value!.isEmpty ? 'Last Name is required' : null,
               ),
@@ -243,6 +258,7 @@ class _UserFormState extends State<UserForm> {
     );
   }
 
+  // **Birthdate and Gender Section**
   Widget _birthDateAndGender() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -251,8 +267,7 @@ class _UserFormState extends State<UserForm> {
           onDateSelected: (date) {
             setState(() {
               _selectedDate = date;
-              _birthDateController.text =
-                  DateFormat('dd-MM-yyyy').format(date);
+              _birthDateController.text = DateFormat('dd-MM-yyyy').format(date);
             });
           },
           dateController: _birthDateController,
@@ -276,6 +291,9 @@ class _UserFormState extends State<UserForm> {
           label: 'Email',
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
+          inputFormatters: [
+            FilteringTextInputFormatter.deny(RegExp(r'\s')),
+          ],
           validator: (value) {
             if (value!.isEmpty) return 'Email is required';
             if (!RegExp(r"^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$")
@@ -349,8 +367,8 @@ class _UserFormState extends State<UserForm> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderSide: BorderSide(
-                  color: _cityError ? _errorColor : Colors.deepPurple,
-                  width: 2, // Focus border
+                  color: _cityError ? _errorColor : Colors.deepPurple[700]!,
+                  width: 1.9, // Focus border
                 ),
               ),
             ),

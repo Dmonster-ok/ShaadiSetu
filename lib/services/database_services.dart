@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'table_details.dart';
@@ -55,8 +56,7 @@ class DatabaseServices {
       firstName: 'Temp',
       lastName: 'User',
       email: 'tempuser${Random().nextInt(999999)}@example.com',
-      phone: (7000000000 + Random().nextInt(1000000000))
-          .toString(),
+      phone: (7000000000 + Random().nextInt(1000000000)).toString(),
       address: 'Unknown',
       city: 'Unknown',
       cast: 'Unknown',
@@ -132,13 +132,22 @@ class DatabaseServices {
         where: '${TableDetails.email} = ? OR ${TableDetails.phone} = ?',
         whereArgs: [user.email, user.phone],
       );
-
       if (existingUser.isNotEmpty) return false;
+      
+      final updatedData = user.toMap();
+      updatedData.remove(TableDetails.id);
 
-      await database.insert(TableDetails.tableName, user.toMap());
+      await database.insert(
+        TableDetails.tableName,
+        updatedData,
+      );
 
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint(
+          '\x1B[31m ------------------------------------------------------------------\x1B[0m');
+      debugPrint('\x1B[31mError: $e\x1B[0m');
+      debugPrint('\x1B[31mStackTrace: $stackTrace\x1B[0m');
       return false;
     }
   }
