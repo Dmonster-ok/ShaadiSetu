@@ -55,26 +55,24 @@ class DatabaseServices {
       firstName: 'Temp',
       lastName: 'User',
       email: 'tempuser${Random().nextInt(999999)}@example.com',
-      phone: (1000000000 + Random().nextInt(899999999)).toString(),
+      phone: (7000000000 + Random().nextInt(1000000000))
+          .toString(),
       address: 'Unknown',
       city: 'Unknown',
       cast: 'Unknown',
       religion: 'Unknown',
       profession: 'Unknown',
       hobbies: 'None',
-      gender: Random().nextInt(3),
+      gender: Random().nextBool() ? 0 : 1,
       favourite: Random().nextBool() ? 1 : 0,
       birthDate: DateTime.now()
           .subtract(Duration(days: Random().nextInt(365 * 30)))
           .toIso8601String(),
       createdAt: DateTime.now().toIso8601String(),
+      profileImage: '',
     );
-    await addUser(user: tempUser);
-  }
 
-  Future<void> addUser({required UserModel user}) async {
-    final database = await db; // Ensure database is initialized
-    await database.insert(TableDetails.tableName, user.toMap());
+    await DatabaseServices().addUser(user: tempUser);
   }
 
   Future<UserModel> getUser({required int userId}) async {
@@ -125,14 +123,50 @@ class DatabaseServices {
     return age;
   }
 
-  Future<void> updateUser({required UserModel user}) async {
-    final database = await db;
-    await database.update(
-      TableDetails.tableName,
-      user.toMap(),
-      where: '${TableDetails.id} = ?',
-      whereArgs: [user.id],
-    );
+  Future<bool> addUser({required UserModel user}) async {
+    try {
+      final database = await db;
+
+      final existingUser = await database.query(
+        TableDetails.tableName,
+        where: '${TableDetails.email} = ? OR ${TableDetails.phone} = ?',
+        whereArgs: [user.email, user.phone],
+      );
+
+      if (existingUser.isNotEmpty) return false;
+
+      await database.insert(TableDetails.tableName, user.toMap());
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> updateUser({required UserModel user}) async {
+    try {
+      final database = await db;
+
+      final existingUser = await database.query(
+        TableDetails.tableName,
+        where:
+            '(${TableDetails.email} = ? OR ${TableDetails.phone} = ?) AND ${TableDetails.id} != ?',
+        whereArgs: [user.email, user.phone, user.id],
+      );
+
+      if (existingUser.isNotEmpty) return false;
+
+      int updatedRows = await database.update(
+        TableDetails.tableName,
+        user.toMap(),
+        where: '${TableDetails.id} = ?',
+        whereArgs: [user.id],
+      );
+
+      return updatedRows > 0;
+    } catch (e) {
+      return false;
+    }
   }
 
   Future<int> isFavourite({required int userId, required int status}) async {

@@ -34,6 +34,17 @@ class _BirthDatePickerState extends State<BirthDatePicker> {
     widget.dateController.text = _dateFormat.format(_selectedDate!);
   }
 
+  @override
+  void didUpdateWidget(covariant BirthDatePicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialDate != oldWidget.initialDate) {
+      setState(() {
+        _selectedDate = widget.initialDate;
+        widget.dateController.text = _dateFormat.format(_selectedDate!);
+      });
+    }
+  }
+
   Future<void> _selectDate(BuildContext context) async {
     try {
       final DateTime? pickedDate = await showDatePicker(
@@ -88,14 +99,18 @@ class _BirthDatePickerState extends State<BirthDatePicker> {
       validator: _validateDate,
       onChanged: (value) {
         try {
-          final DateTime parsedDate = _dateFormat.parseStrict(value);
-          if (parsedDate.isAfter(_firstDate) && parsedDate.isBefore(_lastDate)) {
-            setState(() {
-              _selectedDate = parsedDate;
-            });
-            widget.onDateSelected(parsedDate);
+          if (value.length == 10) {
+            final DateTime parsedDate = _dateFormat.parseStrict(value);
+            if (parsedDate.isAfter(_firstDate) &&
+                parsedDate.isBefore(_lastDate)) {
+              setState(() {
+                _selectedDate = parsedDate;
+              });
+              widget.onDateSelected(parsedDate);
+            }
           }
         } catch (e) {
+          debugPrint("Invalid date input: $value");
         }
       },
     );

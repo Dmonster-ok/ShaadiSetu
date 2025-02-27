@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
+import '../components/birth_date_picker.dart';
+import '../components/gender_selector.dart';
+import '../components/show_image_picker.dart';
+import '../components/text_field.dart';
 import '../services/cities.dart';
 import '../services/database_services.dart';
 import '../services/user_model.dart';
-import 'birth_date_picker.dart';
-import 'gender_selector.dart';
-import 'show_image_picker.dart';
-import 'text_field.dart';
 
-class AddUser extends StatefulWidget {
+class UserForm extends StatefulWidget {
   final String title;
   final VoidCallback onUserAdded;
   final UserModel? user;
-  const AddUser(
+  const UserForm(
       {super.key, this.title = 'Add', required this.onUserAdded, this.user});
 
   @override
-  State<AddUser> createState() => _AddUserState();
+  State<UserForm> createState() => _UserFormState();
 }
 
-class _AddUserState extends State<AddUser> {
+class _UserFormState extends State<UserForm> {
   String _pfpPath = '';
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
@@ -49,7 +50,6 @@ class _AddUserState extends State<AddUser> {
   void _resetForm() {
     setState(() {
       _formKey.currentState?.reset();
-
       _firstNameController.clear();
       _lastNameController.clear();
       _emailController.clear();
@@ -60,10 +60,9 @@ class _AddUserState extends State<AddUser> {
       _castController.clear();
       _religionController.clear();
       _professionController.clear();
-      _birthDateController.clear();
-
       _pfpPath = '';
       _selectedDate = DateTime.now().subtract(const Duration(days: 365 * 25));
+      _birthDateController.text = DateFormat('dd-MM-yyyy').format(_selectedDate);
       _selectedGender = 0;
       _selectedHobbies.clear();
       _selectedCity = null;
@@ -74,21 +73,26 @@ class _AddUserState extends State<AddUser> {
   @override
   void initState() {
     super.initState();
+
     if (widget.user != null) {
-      _firstNameController.text = widget.user!.firstName;
-      _lastNameController.text = widget.user!.lastName;
-      _emailController.text = widget.user!.email;
-      _phoneController.text = widget.user!.phone;
-      _addressController.text = widget.user!.address;
-      _cityController.text = widget.user!.city;
-      _hobbiesController.text = widget.user!.hobbies;
-      _castController.text = widget.user!.cast;
-      _religionController.text = widget.user!.religion;
-      _professionController.text = widget.user!.profession;
-      _selectedDate = widget.user!.birthDate as DateTime;
+      _firstNameController.text = widget.user!.firstName.trim();
+      _lastNameController.text = widget.user!.lastName.trim();
+      _emailController.text = widget.user!.email.toLowerCase().trim();
+      _phoneController.text = widget.user!.phone.trim();
+      _addressController.text = widget.user!.address.trim();
+      _cityController.text = widget.user!.city.trim();
+      _hobbiesController.text = widget.user!.hobbies.trim();
+      _castController.text = widget.user!.cast.trim();
+      _religionController.text = widget.user!.religion.trim();
+      _professionController.text = widget.user!.profession.trim();
+      _selectedDate = DateTime.parse(widget.user!.birthDate);
+      _birthDateController.text = DateFormat('dd-MM-yyyy').format(_selectedDate);
       _selectedGender = widget.user!.gender;
       _pfpPath = widget.user!.profileImage!;
       _selectedHobbies = widget.user!.hobbies.split(',').toSet();
+      _selectedCity = widget.user!.city.trim();
+    } else {
+      _resetForm();
     }
   }
 
@@ -154,8 +158,8 @@ class _AddUserState extends State<AddUser> {
               });
 
               if (_formKey.currentState?.validate() ?? false) {
-                // Trigger validation
                 UserModel newUser = UserModel(
+                  id: widget.user?.id ?? 0, // Use existing ID for updates
                   firstName: _firstNameController.text.trim(),
                   lastName: _lastNameController.text.trim(),
                   email: _emailController.text.trim(),
@@ -169,9 +173,22 @@ class _AddUserState extends State<AddUser> {
                   gender: _selectedGender,
                   profileImage: _pfpPath,
                   birthDate: _selectedDate.toIso8601String(),
-                  createdAt: DateTime.now().toIso8601String(),
+                  createdAt: widget.user?.createdAt ??
+                      DateTime.now().toIso8601String(),
                 );
-                await DatabaseServices().addUser(user: newUser);
+
+                bool success = widget.user != null
+                    ? await DatabaseServices().updateUser(user: newUser)
+                    : await DatabaseServices().addUser(user: newUser);
+
+                if (!success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(
+                            'Potential error occurred. or User already exists')),
+                  );
+                }
+
                 widget.onUserAdded();
                 _resetForm();
               }
@@ -189,9 +206,12 @@ class _AddUserState extends State<AddUser> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         ShowImagePicker(
-          onImagePicked: (String path) {
+          initialImagePath: _pfpPath,
+          onImagePicked: (String? path) {
             setState(() {
-              _pfpPath = path;
+              if (path != null) {
+                _pfpPath = path;
+              }
             });
           },
         ),
@@ -229,7 +249,11 @@ class _AddUserState extends State<AddUser> {
       children: [
         BirthDatePicker(
           onDateSelected: (date) {
-            setState(() => _selectedDate = date);
+            setState(() {
+              _selectedDate = date;
+              _birthDateController.text =
+                  DateFormat('dd-MM-yyyy').format(date);
+            });
           },
           dateController: _birthDateController,
           initialDate: _selectedDate,
@@ -336,6 +360,7 @@ class _AddUserState extends State<AddUser> {
             onSelected: (value) {
               setState(() {
                 _selectedCity = value;
+                _cityController.text = value!;
                 _cityError = false;
               });
             },

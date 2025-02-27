@@ -32,12 +32,6 @@ class GenderSelector extends StatelessWidget {
               onChanged: onChanged,
             ),
             Text('Female'),
-            Radio<int>(
-              value: 2,
-              groupValue: groupValue,
-              onChanged: onChanged,
-            ),
-            Text('Other'),
           ],
         ),
       ],

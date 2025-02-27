@@ -15,6 +15,7 @@ class CustomTextField extends StatelessWidget {
   final void Function(String value)? onChanged;
   final String? hintText;
   final FloatingLabelBehavior? floatingLabelBehavior;
+  final TextCapitalization textCapitalization;
 
   const CustomTextField({
     super.key,
@@ -30,6 +31,7 @@ class CustomTextField extends StatelessWidget {
     this.onChanged,
     this.hintText,
     this.floatingLabelBehavior,
+    this.textCapitalization = TextCapitalization.none,
   });
 
   @override
@@ -41,6 +43,7 @@ class CustomTextField extends StatelessWidget {
           ...inputFormatters,
           LengthLimitingTextInputFormatter(maxLength),
         ],
+        textCapitalization: textCapitalization,
         minLines: minLines,
         maxLines: maxLines,
         keyboardType: keyboardType,

@@ -15,6 +15,7 @@ class TableDetails {
   static const String gender = 'gender';
   static const String favourite = 'favourite';
   static const String birthdate = 'birth_date';
+  static const String age = 'age';
   static const String createdAt = 'created_at';
 }
 

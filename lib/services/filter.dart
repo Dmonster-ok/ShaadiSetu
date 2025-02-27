@@ -6,21 +6,21 @@ List<Map<String, dynamic>> filter({
 }) {
   final String query = searchQuery.trim().toLowerCase();
 
-  if (query.isEmpty) return users;
-
   return users.where((user) {
     final String firstname = (user[TableDetails.firstName] as String?)?.toLowerCase() ?? '';
     final String lastname = (user[TableDetails.lastName] as String?)?.toLowerCase() ?? '';
-    final String city = (user[TableDetails.address] as String?)?.toLowerCase() ?? '';
-    final String age = (user['age']?.toString() ?? '').toLowerCase();
+    final String fullname = '$firstname $lastname'.toLowerCase(); 
+    final String city = (user[TableDetails.city] as String?)?.toLowerCase() ?? '';
+    final String profession = (user[TableDetails.profession] as String?)?.toLowerCase() ?? '';
+    final String age = (user[TableDetails.age]?.toString() ?? '').toLowerCase();
     final String phone = (user[TableDetails.phone]?.toString() ?? '').toLowerCase();
-    final String email = (user[TableDetails.email] as String?)?.toLowerCase() ?? '';
 
     return firstname.contains(query) ||
         lastname.contains(query) ||
+        fullname.contains(query) ||
         city.contains(query) ||
+        profession.contains(query) ||
         age.contains(query) ||
-        phone.contains(query) ||
-        email.contains(query);
+        phone.contains(query);
   }).toList();
 }

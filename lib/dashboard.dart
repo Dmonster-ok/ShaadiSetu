@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shaadisetu/services/search.dart';
-import 'components/add_user.dart';
+import 'package:shaadisetu/services/filter.dart';
+import 'screens/add_or_update_user.dart';
 import 'components/search_bar.dart';
 import 'screens/user_list.dart';
 import 'services/database_services.dart';
@@ -31,11 +31,8 @@ class _DashboardState extends State<Dashboard> {
 
   /// Fetches users from the database and updates the state
   Future<void> _loadUsers() async {
-    // List<Map<String, dynamic>> users = filter(
-    //     users: await _databaseServices.getUsers(), searchQuery: searchQuery);
-
     List<Map<String, dynamic>> users = filter(
-        users: await tmpUsers, searchQuery: searchQuery);
+        users: await _databaseServices.getUsers(), searchQuery: searchQuery);
     setState(() {
       _users = users;
       _favoriteUsers = users.where((user) => user['favourite'] == 1).toList();
@@ -110,13 +107,12 @@ class _DashboardState extends State<Dashboard> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
       ),
-      transitionAnimationController: AnimationController(
-        vsync: Navigator.of(context),
-        duration: const Duration(milliseconds: 300),
-      ),
       builder: (context) {
-        return AddUser(
-          onUserAdded: _loadUsers,
+        return UserForm(
+          onUserAdded: () {
+            _loadUsers();
+            Navigator.pop(context);
+          },
         );
       },
     );
