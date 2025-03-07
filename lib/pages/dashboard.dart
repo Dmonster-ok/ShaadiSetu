@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shaadisetu/components/more_options.dart';
 import 'package:shaadisetu/services/filter.dart';
-import 'screens/add_or_update_user.dart';
-import 'components/search_bar.dart';
-import 'screens/user_list.dart';
-import 'services/database_services.dart';
-import 'services/table_details.dart';
+import 'add_or_update_user.dart';
+import '../components/search_bar.dart';
+import 'user_list.dart';
+import '../services/database_services.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -69,30 +69,22 @@ class _DashboardState extends State<Dashboard> {
           ),
         ],
       ),
-      floatingActionButton: _floatingActionButton(),
-      bottomNavigationBar: _bottomNav(),
-    );
-  }
-
-  Widget _floatingActionButton() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        FloatingActionButton(
-          onPressed: () async{
-            await _showBottomSheet();
-          },
-          child: const Icon(Icons.add),
-        ),
-        const SizedBox(height: 10),
-        FloatingActionButton(
-          onPressed: () async {
-            await _databaseServices.addTempUser();
-            _loadUsers(); // Reload users after adding a temp user
-          },
-          child: const Icon(Icons.refresh),
-        ),
-      ],
+      bottomNavigationBar: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: [
+          _bottomNav(),
+          Positioned(
+            bottom: 30,
+            child: FloatingActionButton(
+              onPressed: () async {
+                await _showBottomSheet();
+              },
+              child: const Icon(Icons.add),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -118,18 +110,7 @@ class _DashboardState extends State<Dashboard> {
 
 // **More Options Menu**
   Widget _moreOptionsButton() {
-    PopupMenuItem<String> popupMenuItem(
-        String value, IconData icon, String text) {
-      return PopupMenuItem<String>(
-        value: value,
-        child: ListTile(
-          leading: Icon(icon),
-          title: Text(text),
-        ),
-      );
-    }
-
-    return PopupMenuButton<String>(
+    return MoreOptionsButton(
       onSelected: (value) {
         switch (value) {
           case 'dark_mode':
@@ -144,10 +125,12 @@ class _DashboardState extends State<Dashboard> {
             break;
         }
       },
-      itemBuilder: (BuildContext context) => [
-        popupMenuItem('dark_mode', Icons.dark_mode, 'Dark Mode'),
-        popupMenuItem('delete_all', Icons.delete, 'Delete All Users'),
-        popupMenuItem('about_us', Icons.info, 'About Us'),
+      options: [
+        MoreOptionItem(
+            value: 'dark_mode', icon: Icons.dark_mode, label: 'Dark Mode'),
+        MoreOptionItem(
+            value: 'delete_all', icon: Icons.delete, label: 'Delete All Users'),
+        MoreOptionItem(value: 'about_us', icon: Icons.info, label: 'About Us'),
       ],
     );
   }

@@ -75,14 +75,23 @@ class DatabaseServices {
     await DatabaseServices().addUser(user: tempUser);
   }
 
-  Future<UserModel> getUser({required int userId}) async {
+  Future<Map<String, dynamic>> getUser({required int userId}) async {
     final database = await db;
     List<Map<String, dynamic>> users = await database.query(
       TableDetails.tableName,
       where: '${TableDetails.id} = ?',
       whereArgs: [userId],
     );
-    return UserModel.fromMap(users.first);
+
+    return users
+        .map((user) {
+          return {
+            ...user,
+            'age': _calculateAge(user[TableDetails.birthdate]),
+          };
+        })
+        .toList()
+        .first;
   }
 
   Future<List<Map<String, dynamic>>> getUsers() async {
@@ -133,7 +142,7 @@ class DatabaseServices {
         whereArgs: [user.email, user.phone],
       );
       if (existingUser.isNotEmpty) return false;
-      
+
       final updatedData = user.toMap();
       updatedData.remove(TableDetails.id);
 

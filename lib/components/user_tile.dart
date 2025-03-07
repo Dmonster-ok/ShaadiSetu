@@ -83,6 +83,8 @@ class _UserTileState extends State<UserTile> {
                       children: [
                         Text(
                           widget.title,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -110,13 +112,13 @@ class _UserTileState extends State<UserTile> {
                     height: _pfpSize,
                     child: Center(
                         child: IconButton(
-                          style: ButtonStyle(
-                            shape: WidgetStateProperty.all(
-                              RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
+                      style: ButtonStyle(
+                        shape: WidgetStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
+                        ),
+                      ),
                       onPressed: widget.onFavourite,
                       icon: Icon(
                         widget.isFavourite ? Icons.star : Icons.star_border,

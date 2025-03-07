@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shaadisetu/dashboard.dart';
+import 'package:shaadisetu/pages/dashboard.dart';
 
 void main() {
   runApp(MaterialApp(
