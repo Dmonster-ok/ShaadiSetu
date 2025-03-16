@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shaadisetu/components/more_options.dart';
 import 'package:shaadisetu/services/filter.dart';
-import 'screens/add_or_update_user.dart';
-import 'components/search_bar.dart';
-import 'screens/user_list.dart';
-import 'services/database_services.dart';
-import 'services/table_details.dart';
+import 'add_or_update_user.dart';
+import '../components/search_bar.dart';
+import 'user_list.dart';
+import '../services/database_services.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -17,8 +17,16 @@ class _DashboardState extends State<Dashboard> {
   final TextEditingController searchController = TextEditingController();
   final DatabaseServices _databaseServices = DatabaseServices();
   final PageController pageController = PageController();
+  final Map<String, String> _sortingOptions = {
+    "newest": "Newset",
+    "oldest": "Oldest",
+    "a-z": "Name (A-Z)",
+    "z-a": "Name (Z-A)",
+    "city": "City",
+  };
 
   String searchQuery = '';
+  String sortBy = 'newest';
   int _selectedIndex = 0;
   List<Map<String, dynamic>> _users = [];
   List<Map<String, dynamic>> _favoriteUsers = [];
@@ -32,7 +40,8 @@ class _DashboardState extends State<Dashboard> {
   Future<void> _loadUsers() async {
     final allUsers = await _databaseServices.getUsers();
     setState(() {
-      _users = filter(users: allUsers, searchQuery: searchQuery);
+      _users = filter(
+          users: allUsers, searchQuery: searchQuery, sortingMethod: sortBy);
       _favoriteUsers = _users.where((user) => user['favourite'] == 1).toList();
     });
   }
@@ -54,48 +63,48 @@ class _DashboardState extends State<Dashboard> {
           ),
         ),
       ),
-      body: PageView(
-        controller: pageController,
-        onPageChanged: (index) => setState(() => _selectedIndex = index),
+      body: Column(
         children: [
-          UserList(
-            users: _users,
-            onRefresh: _loadUsers,
-          ),
-          UserList(
-            users: _favoriteUsers,
-            title: 'Favorite Users',
-            onRefresh: _loadUsers,
+          _sort(),
+          Expanded(
+            child: PageView(
+              controller: pageController,
+              onPageChanged: (index) => setState(() => _selectedIndex = index),
+              children: [
+                UserList(
+                  users: _users,
+                  onRefresh: _loadUsers,
+                ),
+                UserList(
+                  users: _favoriteUsers,
+                  title: 'Favorite Users',
+                  onRefresh: _loadUsers,
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      floatingActionButton: _floatingActionButton(),
-      bottomNavigationBar: _bottomNav(),
+      bottomNavigationBar: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: [
+          _bottomNav(),
+          Positioned(
+            bottom: 30,
+            child: FloatingActionButton(
+              onPressed: () async {
+                await _showBottomSheet();
+              },
+              child: const Icon(Icons.add),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _floatingActionButton() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        FloatingActionButton(
-          onPressed: () async{
-            await _showBottomSheet();
-          },
-          child: const Icon(Icons.add),
-        ),
-        const SizedBox(height: 10),
-        FloatingActionButton(
-          onPressed: () async {
-            await _databaseServices.addTempUser();
-            _loadUsers(); // Reload users after adding a temp user
-          },
-          child: const Icon(Icons.refresh),
-        ),
-      ],
-    );
-  }
-
+  // ** Add users sheet
   _showBottomSheet() {
     showModalBottomSheet(
       enableDrag: true,
@@ -116,20 +125,40 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-// **More Options Menu**
-  Widget _moreOptionsButton() {
-    PopupMenuItem<String> popupMenuItem(
-        String value, IconData icon, String text) {
-      return PopupMenuItem<String>(
-        value: value,
-        child: ListTile(
-          leading: Icon(icon),
-          title: Text(text),
-        ),
-      );
-    }
+  Widget _sort() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: 10),
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _sortingOptions.entries.map((e) {
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            child: ChoiceChip(
+              label: Text(e.value),
+              labelStyle: TextStyle(
+                fontSize: sortBy == e.key ? 16 : 14,
+                fontWeight: sortBy == e.key ? FontWeight.bold : FontWeight.w600
+              ),
+              selected: sortBy == e.key,
+              showCheckmark: false,
+              onSelected: (selected) {
+                if (selected) {
+                  setState(() {
+                    sortBy = e.key;
+                  });
+                  _loadUsers();
+                }
+              },
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
 
-    return PopupMenuButton<String>(
+  // **More Options Menu
+  Widget _moreOptionsButton() {
+    return MoreOptionsButton(
       onSelected: (value) {
         switch (value) {
           case 'dark_mode':
@@ -144,10 +173,12 @@ class _DashboardState extends State<Dashboard> {
             break;
         }
       },
-      itemBuilder: (BuildContext context) => [
-        popupMenuItem('dark_mode', Icons.dark_mode, 'Dark Mode'),
-        popupMenuItem('delete_all', Icons.delete, 'Delete All Users'),
-        popupMenuItem('about_us', Icons.info, 'About Us'),
+      options: [
+        MoreOptionItem(
+            value: 'dark_mode', icon: Icons.dark_mode, label: 'Dark Mode'),
+        MoreOptionItem(
+            value: 'delete_all', icon: Icons.delete, label: 'Delete All Users'),
+        MoreOptionItem(value: 'about_us', icon: Icons.info, label: 'About Us'),
       ],
     );
   }

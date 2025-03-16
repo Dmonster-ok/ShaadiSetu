@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shaadisetu/pages/user_profile.dart';
 import '../components/user_tile.dart';
 import '../services/database_services.dart';
 import '../services/table_details.dart';
@@ -21,11 +22,10 @@ class UserList extends StatefulWidget {
   State<UserList> createState() => _UserListState();
 }
 
-class _UserListState extends State<UserList>
-    with SingleTickerProviderStateMixin {
+class _UserListState extends State<UserList> {
   int? _selectedIndex;
-
   final DatabaseServices _databaseServices = DatabaseServices();
+
   @override
   Widget build(BuildContext context) {
     return widget.users.isEmpty ? _notFound() : _list();
@@ -67,6 +67,19 @@ class _UserListState extends State<UserList>
               });
             },
             profileImage: user[TableDetails.profileImage],
+            onProfileTap: () async {
+              Map<String, dynamic> userData = await _databaseServices.getUser(
+                  userId: user[TableDetails.id]);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserProfile(
+                    user: userData,
+                    onRefresh: widget.onRefresh,
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
@@ -96,26 +109,7 @@ class _UserListState extends State<UserList>
           children: [
             TextButton(
               onPressed: () async {
-                UserModel userModel = await _databaseServices.getUser(
-                    userId: user[TableDetails.id]);
-                showModalBottomSheet(
-                  enableDrag: true,
-                  showDragHandle: true,
-                  context: context,
-                  isScrollControlled: true,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(10)),
-                  ),
-                  builder: (context) => UserForm(
-                    title: 'Edit',
-                    user: userModel,
-                    onUserAdded: () {
-                      widget.onRefresh!();
-                      Navigator.pop(context);
-                    },
-                  ),
-                );
+                await _showEdit(user[TableDetails.id]);
               },
               child: const Text('Edit'),
             ),
@@ -158,6 +152,28 @@ class _UserListState extends State<UserList>
     );
   }
 
+  Future _showEdit(int id) async {
+    UserModel userModel =
+        UserModel.fromMap(await _databaseServices.getUser(userId: id));
+    return showModalBottomSheet(
+      enableDrag: true,
+      showDragHandle: true,
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+      ),
+      builder: (context) => UserForm(
+        title: 'Edit',
+        user: userModel,
+        onUserAdded: () {
+          widget.onRefresh!();
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
   Widget _notFound() {
     return Center(
       child: Text(
@@ -165,5 +181,12 @@ class _UserListState extends State<UserList>
         style: const TextStyle(fontSize: 18, color: Colors.black54),
       ),
     );
+  }
+
+  String toTitleCase(String text) {
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
   }
 }
