@@ -17,6 +17,13 @@ class _DashboardState extends State<Dashboard> {
   final TextEditingController searchController = TextEditingController();
   final DatabaseServices _databaseServices = DatabaseServices();
   final PageController pageController = PageController();
+  final Map<String, String> _sortingOptions = {
+    "newest": "Newset",
+    "oldest": "Oldest",
+    "a-z": "Name (A-Z)",
+    "z-a": "Name (Z-A)",
+    "city": "City",
+  };
 
   String searchQuery = '';
   String sortBy = 'newest';
@@ -119,34 +126,30 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Widget _sort() {
-    Map<String, String> sortingOptions = {
-      "newest": "Newset",
-      "oldest": "Oldest",
-      "a-z": "Name (A-Z)",
-      "z-a": "Name (Z-A)",
-      "city": "City",
-    };
-
-    return DropdownButtonHideUnderline(
-      child: DropdownButton<String>(
-        value: sortingOptions.containsKey(sortBy) ? sortBy : sortingOptions.keys.first,
-        alignment: Alignment(0, 0),
-        elevation: 1,
-        icon: Icon(Icons.sort),
-        isDense: true,
-        borderRadius: BorderRadius.all(Radius.circular(5)),
-        onChanged: (String? newValue) {
-          if (newValue != null) {
-            setState(() {
-              sortBy = newValue;
-            });
-            _loadUsers();
-          }
-        },
-        items: sortingOptions.entries.map((entry) {
-          return DropdownMenuItem(
-            value: entry.key,
-            child: Text(entry.value,style: TextStyle(fontSize: 16),),
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: 10),
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _sortingOptions.entries.map((e) {
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            child: ChoiceChip(
+              label: Text(e.value),
+              labelStyle: TextStyle(
+                fontSize: sortBy == e.key ? 16 : 14,
+                fontWeight: sortBy == e.key ? FontWeight.bold : FontWeight.w600
+              ),
+              selected: sortBy == e.key,
+              showCheckmark: false,
+              onSelected: (selected) {
+                if (selected) {
+                  setState(() {
+                    sortBy = e.key;
+                  });
+                  _loadUsers();
+                }
+              },
+            ),
           );
         }).toList(),
       ),
