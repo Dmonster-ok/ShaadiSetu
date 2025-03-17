@@ -18,6 +18,14 @@ class ShaadiSetuApp extends StatefulWidget {
 class _ShaadiSetuAppState extends State<ShaadiSetuApp> {
   bool _isConnected = true;
 
+  ThemeMode _themeMode = ThemeMode.light;
+
+  void _toggleTheme(bool isDark) {
+    setState(() {
+      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -65,8 +73,19 @@ class _ShaadiSetuAppState extends State<ShaadiSetuApp> {
     return MaterialApp(
       title: 'ShaadiSetu',
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        brightness: Brightness.light,
+        primarySwatch: Colors.deepPurple,
+        // Add your light theme customizations
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.deepPurple,
+        // Add your dark theme customizations
+      ),
+      themeMode: _themeMode, // Add this
       home: _isConnected
-          ? const Dashboard()
+          ? Dashboard(onThemeChanged: _toggleTheme) // Pass callback
           : NoInternetScreen(onRetry: _checkFullConnectivity),
     );
   }

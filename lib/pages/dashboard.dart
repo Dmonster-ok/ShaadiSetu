@@ -7,7 +7,8 @@ import 'user_list.dart';
 import '../services/api_services.dart';
 
 class Dashboard extends StatefulWidget {
-  const Dashboard({super.key});
+  final Function(bool) onThemeChanged;
+  const Dashboard({super.key, required this.onThemeChanged});
 
   @override
   State<Dashboard> createState() => _DashboardState();
@@ -29,6 +30,7 @@ class _DashboardState extends State<Dashboard> {
   String sortBy = 'newest';
   int _selectedIndex = 0;
   bool _isLoading = true;
+  bool _isDarkMode = false;
   List<Map<String, dynamic>> _users = [];
   List<Map<String, dynamic>> _favoriteUsers = [];
 
@@ -188,11 +190,18 @@ class _DashboardState extends State<Dashboard> {
           });
     }
 
+    void darkmode() {
+      setState(() {
+        _isDarkMode = !_isDarkMode;
+      });
+      widget.onThemeChanged(_isDarkMode);
+    }
+
     return MoreOptionsButton(
       onSelected: (value) {
         switch (value) {
           case 'dark_mode':
-            print('Dark mode toggle');
+            darkmode();
             break;
           case 'delete_all':
             deleteAllUsers();
@@ -204,7 +213,9 @@ class _DashboardState extends State<Dashboard> {
       },
       options: [
         MoreOptionItem(
-            value: 'dark_mode', icon: Icons.dark_mode, label: 'Dark Mode'),
+            value: 'dark_mode',
+            icon: _isDarkMode ? Icons.light_mode : Icons.dark_mode,
+            label: _isDarkMode ? 'Light Mode' : 'Dark Mode'),
         MoreOptionItem(
             value: 'delete_all', icon: Icons.delete, label: 'Delete All Users'),
         MoreOptionItem(value: 'about_us', icon: Icons.info, label: 'About Us'),
