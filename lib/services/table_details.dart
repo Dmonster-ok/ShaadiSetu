@@ -1,7 +1,7 @@
 class TableDetails {
   static const String tableName = 'users';
   static const String profileImage = 'profile_image';
-  static const String id = 'id';
+  static const String id = '_id';
   static const String firstName = 'first_name';
   static const String lastName = 'last_name';
   static const String address = 'address';
