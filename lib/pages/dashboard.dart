@@ -163,6 +163,31 @@ class _DashboardState extends State<Dashboard> {
 
   // **More Options Menu
   Widget _moreOptionsButton() {
+    void deleteAllUsers() async {
+      showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Delete All Users'),
+              content: const Text('Are you sure you want to delete all users?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await _databaseServices.deleteAll();
+                    _loadUsers();
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Delete'),
+                ),
+              ],
+            );
+          });
+    }
+
     return MoreOptionsButton(
       onSelected: (value) {
         switch (value) {
@@ -170,8 +195,7 @@ class _DashboardState extends State<Dashboard> {
             print('Dark mode toggle');
             break;
           case 'delete_all':
-            _databaseServices.deleteAll();
-            _loadUsers();
+            deleteAllUsers();
             break;
           case 'about_us':
             print('About Us');
