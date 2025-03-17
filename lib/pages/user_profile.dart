@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shaadisetu/services/user_model.dart';
 import '../components/more_options.dart';
-import '../services/database_services.dart';
+import '../services/api_services.dart';
 import '../services/table_details.dart';
 import 'package:intl/intl.dart';
 
@@ -23,7 +23,7 @@ class UserProfile extends StatefulWidget {
 }
 
 class _UserProfileState extends State<UserProfile> {
-  final DatabaseServices _databaseServices = DatabaseServices();
+  final ApiServices _databaseServices = ApiServices();
   late bool isFavourite;
 
   @override
@@ -94,8 +94,7 @@ class _UserProfileState extends State<UserProfile> {
   }
 
   Future _showEdit() async {
-    UserModel userModel = UserModel.fromMap(
-        await _databaseServices.getUser(userId: widget.user[TableDetails.id]));
+    UserModel userModel = UserModel.fromMap(widget.user);
 
     return showModalBottomSheet(
       enableDrag: true,
@@ -110,8 +109,8 @@ class _UserProfileState extends State<UserProfile> {
         user: userModel,
         onUserAdded: () async {
           // Fetch the updated user data
-          Map<String, dynamic> updatedUser = await _databaseServices.getUser(
-              userId: widget.user[TableDetails.id]);
+          Map<String, dynamic> updatedUser =
+              UserModel.fromMap(widget.user).toMap(includeId: true);
 
           if (mounted) {
             setState(() {
@@ -144,7 +143,6 @@ class _UserProfileState extends State<UserProfile> {
             onPressed: () async {
               await _databaseServices.deleteUser(
                   userId: widget.user[TableDetails.id]);
-
               if (mounted) {
                 widget.onRefresh?.call();
                 Navigator.pop(context); // Close dialog

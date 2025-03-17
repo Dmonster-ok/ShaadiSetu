@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shaadisetu/pages/user_profile.dart';
 import '../components/user_tile.dart';
-import '../services/database_services.dart';
+import '../services/api_services.dart';
 import '../services/table_details.dart';
 import '../services/user_model.dart';
 import 'add_or_update_user.dart';
@@ -9,12 +9,14 @@ import 'add_or_update_user.dart';
 class UserList extends StatefulWidget {
   final String title;
   final List<Map<String, dynamic>> users;
+  final bool isLoading;
   final VoidCallback? onRefresh;
 
   const UserList({
     super.key,
     this.title = 'Users',
     required this.users,
+    required this.isLoading,
     required this.onRefresh,
   });
 
@@ -24,11 +26,19 @@ class UserList extends StatefulWidget {
 
 class _UserListState extends State<UserList> {
   int? _selectedIndex;
-  final DatabaseServices _databaseServices = DatabaseServices();
+  final ApiServices _databaseServices = ApiServices();
 
   @override
   Widget build(BuildContext context) {
-    return widget.users.isEmpty ? _notFound() : _list();
+    return widget.isLoading
+        ? _loading()
+        : widget.users.isEmpty
+            ? _notFound()
+            : _list();
+  }
+
+  Widget _loading() {
+    return const Center(child: CircularProgressIndicator());
   }
 
   Widget _list() {
@@ -68,8 +78,7 @@ class _UserListState extends State<UserList> {
             },
             profileImage: user[TableDetails.profileImage],
             onProfileTap: () async {
-              Map<String, dynamic> userData = await _databaseServices.getUser(
-                  userId: user[TableDetails.id]);
+              Map<String, dynamic> userData = widget.users[index];
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -152,9 +161,10 @@ class _UserListState extends State<UserList> {
     );
   }
 
-  Future _showEdit(int id) async {
-    UserModel userModel =
-        UserModel.fromMap(await _databaseServices.getUser(userId: id));
+  Future _showEdit(String id) async {
+    UserModel userModel = UserModel.fromMap(
+      widget.users.firstWhere((element) => element[TableDetails.id] == id),
+    );
     return showModalBottomSheet(
       enableDrag: true,
       showDragHandle: true,

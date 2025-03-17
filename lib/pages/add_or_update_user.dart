@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-
 import '../components/birth_date_picker.dart';
 import '../components/gender_selector.dart';
 import '../components/show_image_picker.dart';
 import '../components/text_field.dart';
 import '../services/cities.dart';
-import '../services/database_services.dart';
+import '../services/api_services.dart';
 import '../services/user_model.dart';
 
 class UserForm extends StatefulWidget {
@@ -162,7 +161,7 @@ class _UserFormState extends State<UserForm> {
 
               if (_formKey.currentState?.validate() ?? false) {
                 UserModel newUser = UserModel(
-                  id: widget.user?.id ?? 0, // Use existing ID for updates
+                  id: widget.user?.id,
                   firstName: _firstNameController.text.trim(),
                   lastName: _lastNameController.text.trim(),
                   email: _emailController.text.trim(),
@@ -181,14 +180,13 @@ class _UserFormState extends State<UserForm> {
                 );
 
                 bool success = widget.user != null
-                    ? await DatabaseServices().updateUser(user: newUser)
-                    : await DatabaseServices().addUser(user: newUser);
+                    ? await ApiServices().updateUser(user: newUser)
+                    : await ApiServices().addUser(user: newUser);
 
                 if (!success) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text(
-                            'Potential error occurred. or User already exists')),
+                        content: Text('Error occurred or user already exists')),
                   );
                 }
 

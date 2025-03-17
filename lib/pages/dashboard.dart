@@ -4,7 +4,7 @@ import 'package:shaadisetu/services/filter.dart';
 import 'add_or_update_user.dart';
 import '../components/search_bar.dart';
 import 'user_list.dart';
-import '../services/database_services.dart';
+import '../services/api_services.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -15,7 +15,7 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   final TextEditingController searchController = TextEditingController();
-  final DatabaseServices _databaseServices = DatabaseServices();
+  final ApiServices _databaseServices = ApiServices();
   final PageController pageController = PageController();
   final Map<String, String> _sortingOptions = {
     "newest": "Newset",
@@ -28,6 +28,7 @@ class _DashboardState extends State<Dashboard> {
   String searchQuery = '';
   String sortBy = 'newest';
   int _selectedIndex = 0;
+  bool _isLoading = true;
   List<Map<String, dynamic>> _users = [];
   List<Map<String, dynamic>> _favoriteUsers = [];
 
@@ -38,11 +39,13 @@ class _DashboardState extends State<Dashboard> {
   }
 
   Future<void> _loadUsers() async {
+    setState(() => _isLoading = true);
     final allUsers = await _databaseServices.getUsers();
     setState(() {
       _users = filter(
           users: allUsers, searchQuery: searchQuery, sortingMethod: sortBy);
       _favoriteUsers = _users.where((user) => user['favourite'] == 1).toList();
+      _isLoading = false;
     });
   }
 
@@ -73,11 +76,13 @@ class _DashboardState extends State<Dashboard> {
               children: [
                 UserList(
                   users: _users,
+                  isLoading: _isLoading,
                   onRefresh: _loadUsers,
                 ),
                 UserList(
                   users: _favoriteUsers,
                   title: 'Favorite Users',
+                  isLoading: _isLoading,
                   onRefresh: _loadUsers,
                 ),
               ],
@@ -136,9 +141,9 @@ class _DashboardState extends State<Dashboard> {
             child: ChoiceChip(
               label: Text(e.value),
               labelStyle: TextStyle(
-                fontSize: sortBy == e.key ? 16 : 14,
-                fontWeight: sortBy == e.key ? FontWeight.bold : FontWeight.w600
-              ),
+                  fontSize: sortBy == e.key ? 16 : 14,
+                  fontWeight:
+                      sortBy == e.key ? FontWeight.bold : FontWeight.w600),
               selected: sortBy == e.key,
               showCheckmark: false,
               onSelected: (selected) {

@@ -1,7 +1,7 @@
 import 'table_details.dart';
 
 class UserModel {
-  final int? id;
+  final String? id;
   final String? profileImage;
   final String firstName;
   final String lastName;
@@ -37,9 +37,8 @@ class UserModel {
     required this.createdAt,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      if (id != null) TableDetails.id: id,
+  Map<String, dynamic> toMap({bool includeId = false}) {
+    final data = {
       TableDetails.profileImage: profileImage,
       TableDetails.firstName: firstName,
       TableDetails.lastName: lastName,
@@ -56,6 +55,12 @@ class UserModel {
       TableDetails.birthdate: birthDate,
       TableDetails.createdAt: createdAt,
     };
+
+    if (includeId && id != null) {
+      data['id'] = id;
+    }
+
+    return data;
   }
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
